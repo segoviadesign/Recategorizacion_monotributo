@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 from src.monotributo import determinar_categoria
-from src.afip_client import get_total_facturado  # función que vos deberás tener
+from src.afip_client import consultar_facturacion_periodo
+
 
 app = Flask(__name__)
 

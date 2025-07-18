@@ -1,28 +1,13 @@
-from flask import Flask, render_template, request
-from src.monotributo import determinar_categoria
-from src.afip_client import get_total_facturado
-from dotenv import load_dotenv
-load_dotenv()
-
-app = Flask(__name__)
-
-@app.route("/", methods=["GET", "POST"])
-def index():
-    cuit = "20263932812"  # Leído desde acceso.txt en una implementación posterior
-    total = None
-    categoria = None
-
-    if request.method == "POST":
-        fecha_desde = request.form["fecha_desde"].replace("-", "")
-        fecha_hasta = request.form["fecha_hasta"].replace("-", "")
-        try:
-            total = get_total_facturado(fecha_desde, fecha_hasta)
-            categoria = determinar_categoria(total)
-        except Exception as e:
-            total = 0
-            categoria = f"Error: {str(e)}"
-
-    return render_template("index.html", cuit=cuit, total=total, categoria=categoria)
+from src.afip_client import consultar_facturacion_periodo
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    CUIT = "20263932812"
+    CERT_PATH = "data/acceso/ssegovia/ssegovia.crt"
+    KEY_PATH = "data/acceso/ssegovia/ssegovia.key"
+    WS = "wsfe"
+
+    FECHA_INICIO = "2024-07-01"
+    FECHA_FIN = "2025-06-30"
+
+    total = consultar_facturacion_periodo(CUIT, CERT_PATH, KEY_PATH, FECHA_INICIO, FECHA_FIN)
+    print(f"Total facturado entre {FECHA_INICIO} y {FECHA_FIN}: ${total:.2f}")
