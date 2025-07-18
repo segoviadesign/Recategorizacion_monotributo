@@ -1,45 +1,47 @@
-from pyafipws.wsfev1 import WSFEv1
+import os
 from datetime import datetime
+from typing import List, Dict, Any
+
+from . import requests
+
+
+class AFIPClient:
+    """Simple client to fetch electronic invoices from AFIP."""
+
+    def __init__(self) -> None:
+        self.cuit = os.getenv("AFIP_CUIT", "")
+        self.cert_path = os.getenv("AFIP_CERT_PATH", "")
+        self.key_path = os.getenv("AFIP_KEY_PATH", "")
+        self.base_url = os.getenv("AFIP_WS_URL", "https://dummy.afip/wsfe")
+
+    def get_invoices(self, start: datetime, end: datetime) -> List[Dict[str, Any]]:
+        params = {
+            "cuit": self.cuit,
+            "start": start.strftime("%Y-%m-%d"),
+            "end": end.strftime("%Y-%m-%d"),
+        }
+        response = requests.get(
+            self.base_url,
+            params=params,
+            cert=(self.cert_path, self.key_path) if self.cert_path and self.key_path else None,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("invoices", [])
+
+
+def sum_invoices_total(invoices: List[Dict[str, Any]]) -> float:
+    """Sum the total amount of all invoices returned by :meth:`get_invoices`."""
+    total = 0.0
+    for inv in invoices:
+        total += float(inv.get("total", 0))
+    return total
+
 
 def get_total_facturado(fecha_desde: str, fecha_hasta: str) -> float:
-    print("🧩 Inicializando conexión con AFIP (testing)...")
-    ws = WSFEv1()
-    ws.LanzarTesting = False
-    ws.URLWSAA = "https://wswhomo.afip.gov.ar/wsfe/service.asmx"  # homologación explícita
-    ws.Cuit = 20263932812
-
-    ws.cert = "data/acceso/ssegovia/ssegovia.crt"
-    ws.key = "data/acceso/ssegovia/ssegovia.key"
-
-    try:
-        ws.SetTicketAcceso("wsfe")
-    except Exception as e:
-        print("❌ Error al generar Ticket de Acceso:")
-        print(f"Mensaje: {str(e)}")
-        if hasattr(ws, "xml_request"):
-            print("📝 XML enviado:\n", ws.xml_request)
-        if hasattr(ws, "xml_response"):
-            print("📨 XML recibido:\n", ws.xml_response)
-        raise e
-
-    punto_venta = 1
-    tipo_cbte = 6
-    ult = ws.CompUltimoAutorizado(punto_venta, tipo_cbte)
-    if not ult:
-        raise Exception(f"❌ Error obteniendo último comprobante autorizado: {ws.ErrMsg}")
-
-    total = 0.0
-    print(f"📦 Consultando comprobantes desde el 1 hasta el {ult}...")
-
-    for nro in range(1, ult + 1):
-        if ws.CompConsultar(punto_venta, tipo_cbte, nro):
-            fecha_cbte = ws.Resultado["cbte_fch"]
-            if fecha_desde <= fecha_cbte <= fecha_hasta:
-                importe = float(ws.Resultado["imp_total"])
-                total += importe
-                print(f"✅ Nro {nro} - Fecha: {fecha_cbte} - Importe: {importe}")
-        else:
-            print(f"⚠️ Error consultando comprobante {nro}: {ws.ErrMsg}")
-
-    print(f"💰 Total facturado entre {fecha_desde} y {fecha_hasta}: ${total:,.2f}")
-    return total
+    """Helper used by the web app to sum invoices in a date range."""
+    client = AFIPClient()
+    start = datetime.strptime(fecha_desde, "%Y%m%d")
+    end = datetime.strptime(fecha_hasta, "%Y%m%d")
+    invoices = client.get_invoices(start, end)
+    return sum_invoices_total(invoices)
