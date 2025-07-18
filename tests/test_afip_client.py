@@ -26,8 +26,8 @@ def mock_get(*args, **kwargs):
 
 def test_get_invoices_and_sum():
     client = AFIPClient()
-    start = datetime(2023, 1, 1)
-    end = datetime(2023, 1, 31)
+    start = datetime(2024, 7, 1)
+    end = datetime(2025, 6, 30)
     with patch.object(requests, "get", side_effect=mock_get):
         invoices = client.get_invoices(start, end)
     assert len(invoices) == 2
