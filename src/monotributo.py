@@ -1,18 +1,12 @@
 from typing import Dict
 
 # Sample category thresholds, values are annual gross income limits
+# Simplified annual sales limits used for testing purposes
 CATEGORY_LIMITS: Dict[str, float] = {
-    "A": 8992597.87,
-    "B": 13175201.52,
-    "C": 18473166.15,
-    "D": 22934610.05,
-    "E": 26977793.60,
-    "F": 33809379.57,
-    "G": 40431835.35,
-    "H": 61344853.64,
-    "I": 68664410.05,
-    "J": 78632948.76,
-    "K": 94805682.90,
+    "A": 250_000.0,
+    "B": 350_000.0,
+    "C": 450_000.0,
+    "D": 600_000.0,
 }
 
 

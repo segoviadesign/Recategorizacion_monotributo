@@ -4,10 +4,11 @@ Herramienta basica para consultar las facturas electronicas emitidas y comparar 
 
 ## Instalacion
 
-Se requiere Python 3.8 o superior y `requests` para realizar las consultas.
+Se requiere Python 3.8 o superior junto con las dependencias listadas en
+`requirements.txt` (`requests` y `pyafipws`).
 
 ```bash
-pip install -r requirements.txt  # solo `requests` para este ejemplo
+pip install -r requirements.txt
 ```
 
 ## Configuracion
