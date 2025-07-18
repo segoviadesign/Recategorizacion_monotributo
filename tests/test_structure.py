@@ -13,11 +13,11 @@ def test_modules_importable():
 
 
 def test_afip_client_env_vars(monkeypatch):
-    monkeypatch.setenv('AFIP_CUIT', '12345678901')
-    monkeypatch.setenv('AFIP_CERT_PATH', '/tmp/cert.crt')
-    monkeypatch.setenv('AFIP_KEY_PATH', '/tmp/key.key')
+    monkeypatch.setenv('AFIP_CUIT', '20263932812')
+    monkeypatch.setenv('AFIP_CERT_PATH', '/data/acceso/ssegovia/facturacion_75e783404c7b5bfc.crt')
+    monkeypatch.setenv('AFIP_KEY_PATH', '/data/acceso/ssegovia/ssegovia.key')
     client = AFIPClient()
-    assert client.cuit == '12345678901'
-    assert client.cert_path == '/tmp/cert.crt'
-    assert client.key_path == '/tmp/key.key'
+    assert client.cuit == '20263932812'
+    assert client.cert_path == '/data/acceso/ssegovia/facturacion_75e783404c7b5bfc.crt'
+    assert client.key_path == '/data/acceso/ssegovia/ssegovia.key'
     assert client.base_url == 'https://dummy.afip/wsfe'
