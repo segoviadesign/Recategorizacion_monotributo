@@ -1,35 +1,45 @@
-import os
+from pyafipws.wsfev1 import WSFEv1
 from datetime import datetime
-from typing import List, Dict
-from . import requests
 
+def get_total_facturado(fecha_desde: str, fecha_hasta: str) -> float:
+    print("🧩 Inicializando conexión con AFIP (testing)...")
+    ws = WSFEv1()
+    ws.LanzarTesting = False
+    ws.URLWSAA = "https://wswhomo.afip.gov.ar/wsfe/service.asmx"  # homologación explícita
+    ws.Cuit = 20263932812
 
-class AFIPClient:
-    """Simple client for AFIP WSFE."""
+    ws.cert = "data/acceso/ssegovia/ssegovia.crt"
+    ws.key = "data/acceso/ssegovia/ssegovia.key"
 
-    def __init__(self) -> None:
-        self.cuit = os.getenv("AFIP_CUIT")
-        self.cert_path = os.getenv("AFIP_CERT_PATH")
-        self.key_path = os.getenv("AFIP_KEY_PATH")
-        self.base_url = os.getenv("AFIP_WS_URL", "https://dummy.afip/wsfe")
+    try:
+        ws.SetTicketAcceso("wsfe")
+    except Exception as e:
+        print("❌ Error al generar Ticket de Acceso:")
+        print(f"Mensaje: {str(e)}")
+        if hasattr(ws, "xml_request"):
+            print("📝 XML enviado:\n", ws.xml_request)
+        if hasattr(ws, "xml_response"):
+            print("📨 XML recibido:\n", ws.xml_response)
+        raise e
 
-    def get_invoices(self, start_date: datetime, end_date: datetime) -> List[Dict]:
-        """Return invoices issued between two dates."""
-        params = {
-            "start_date": start_date.strftime("%Y-%m-%d"),
-            "end_date": end_date.strftime("%Y-%m-%d"),
-            "cuit": self.cuit,
-        }
-        response = requests.get(
-            self.base_url,
-            params=params,
-            cert=(self.cert_path, self.key_path),
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("invoices", [])
+    punto_venta = 1
+    tipo_cbte = 6
+    ult = ws.CompUltimoAutorizado(punto_venta, tipo_cbte)
+    if not ult:
+        raise Exception(f"❌ Error obteniendo último comprobante autorizado: {ws.ErrMsg}")
 
+    total = 0.0
+    print(f"📦 Consultando comprobantes desde el 1 hasta el {ult}...")
 
-def sum_invoices_total(invoices: List[Dict]) -> float:
-    """Sum total amount from invoice list."""
-    return sum(float(inv.get("total", 0)) for inv in invoices)
+    for nro in range(1, ult + 1):
+        if ws.CompConsultar(punto_venta, tipo_cbte, nro):
+            fecha_cbte = ws.Resultado["cbte_fch"]
+            if fecha_desde <= fecha_cbte <= fecha_hasta:
+                importe = float(ws.Resultado["imp_total"])
+                total += importe
+                print(f"✅ Nro {nro} - Fecha: {fecha_cbte} - Importe: {importe}")
+        else:
+            print(f"⚠️ Error consultando comprobante {nro}: {ws.ErrMsg}")
+
+    print(f"💰 Total facturado entre {fecha_desde} y {fecha_hasta}: ${total:,.2f}")
+    return total
